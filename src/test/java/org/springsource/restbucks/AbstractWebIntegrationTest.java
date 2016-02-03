@@ -16,10 +16,12 @@
 package org.springsource.restbucks;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.*;
 
 import java.util.Locale;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,12 +29,14 @@ import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.client.LinkDiscoverer;
 import org.springframework.hateoas.client.LinkDiscoverers;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcConfigurer;
 import org.springframework.web.context.WebApplicationContext;
 
 /**
@@ -46,15 +50,23 @@ public abstract class AbstractWebIntegrationTest {
 
 	@Autowired WebApplicationContext context;
 	@Autowired LinkDiscoverers links;
+	@Rule public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation("target/generated-snippets");
 
 	protected MockMvc mvc;
+	protected DocumentationFlow flow;
 
 	@Before
 	public void setUp() {
 
-		mvc = MockMvcBuilders.webAppContextSetup(context).//
-				defaultRequest(MockMvcRequestBuilders.get("/").locale(Locale.US)).//
-				build();
+		MockMvcConfigurer documentationConfiguration = documentationConfiguration(this.restDocumentation)//
+				.uris().withHost("api.example.com").withPort(80);
+
+		this.mvc = MockMvcBuilders.webAppContextSetup(context)//
+				.defaultRequest(MockMvcRequestBuilders.get("/").locale(Locale.US))//
+				.apply(documentationConfiguration)//
+				.build();
+
+		this.flow = DocumentationFlow.NONE;
 	}
 
 	/**
